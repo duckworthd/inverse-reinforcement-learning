@@ -19,6 +19,9 @@ class GWState(State):
     def __str__(self):
         return 'GWState: [location={}]'.format(self.location)
     
+    def __repr(self):
+        return self.__str__()
+    
     def __eq__(self, other):
         try:
             return all(self.location == other.location)
@@ -47,6 +50,9 @@ class GWAction(Action):
     
     def __str__(self):
         return "GWAction: [direction={}]".format(self.direction)
+    
+    def __repr(self):
+        return self.__str__()
     
     def __eq__(self,other):
         try:
@@ -98,7 +104,7 @@ class GWModel(Model):
         
     def S(self):
         """All states in the MDP"""
-        return itertools.product(range(self._map_size[0]), range(self._map_size[1]) )
+        return [GWState(loc) for loc in itertools.product(range(self._map_size[0]), range(self._map_size[1]) )]
         
     def A(self,state=None):
         """All actions in the MDP is state=None, otherwise actions available

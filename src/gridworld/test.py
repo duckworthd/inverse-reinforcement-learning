@@ -7,21 +7,25 @@ from mdp import agent, simulation
 from util.NumMap import NumMap
 
 if __name__ == '__main__':
-    rand = random.Random(0)
+    random.seed(0)
+    numpy.random.seed(0)
     
     map_size = array( [5,5] )
     box_size = array( [2,2] )
-    p_fail = 0.3
+    p_fail = 0.1
     initial = NumMap({GWState( (0,0) ):1.0})
     t_max = 10
     
     reward = GWBoxReward(box_size, map_size)
     reward_weights = numpy.random.rand( reward.dim() )
     reward.params = reward_weights
-    print(reward)
     
     model = GWModel(p_fail, map_size)
     model.reward_function = reward
+    
+    print reward
+    print [str(state) for state in model.S()]
+    print [str(action) for action in model.A()]
     
     agent = agent.HumanAgent(model)
     

@@ -3,17 +3,14 @@ Miscellaneous utility functions
 '''
 import random
 
-def sample(distr, rand=None):
+def sample(distr):
     '''
     sample from a discrete probability distribution
     '''
     
     if len(distr) == 0:
         raise Exception("Can't sample empty distribution")
-    
-    if rand == None:
-        rand = random.Random();
-    v = rand.random()
+    v = random.random()
     total = 0
     for choice in distr.keys():
         total += distr[choice]
