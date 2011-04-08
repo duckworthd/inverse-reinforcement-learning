@@ -24,7 +24,7 @@ class GWBoxReward(LinearReward):
         box_loc = numpy.floor(state.location/self._box_size)
         
         result = numpy.zeros( self.dim() )
-        result[box_loc[0] + box_loc[1]*box_per_row ] = 1
+        result[box_loc[0]*box_per_row + box_loc[1] ] = 1
         return result
     
         
@@ -33,7 +33,7 @@ class GWBoxReward(LinearReward):
         for i in reversed(range(self._map_size[0])):
             for j in range(self._map_size[1]):
                 state = GWState( numpy.array( [i,j] ) )
-                action = GWAction( numpy.array([0,0]) )
+                action = GWAction( numpy.array([0,0] ) )
                 result += '|{: 4.4f}|'.format(self.reward(state, action))
             result += '\n'
         return result

@@ -5,7 +5,7 @@ import itertools
 
 class GWState(State):
     
-    def __init__(self, location=(0,0)):
+    def __init__(self, location=array( [0,0] )):
         self._location = location
     
     @property
@@ -24,12 +24,13 @@ class GWState(State):
     
     def __eq__(self, other):
         try:
-            return all(self.location == other.location)
+            return all( self.location == other.location) # epsilon error
         except Exception:
             return False
     
     def __hash__(self):
-        return self.location.__hash__()
+        loc = self.location # hash codes for numpy.array not consistent?
+        return (loc[0], loc[1]).__hash__()
     
 
 class GWAction(Action):
@@ -61,7 +62,8 @@ class GWAction(Action):
             return False
     
     def __hash__(self):
-        return self.direction().__hash__()
+        dir = self.direction    # hash codes for numpy.array not consistent?
+        return (dir[0], dir[1]).__hash__()
         
         
 class GWModel(Model):
@@ -104,7 +106,11 @@ class GWModel(Model):
         
     def S(self):
         """All states in the MDP"""
-        return [GWState(loc) for loc in itertools.product(range(self._map_size[0]), range(self._map_size[1]) )]
+        result = []
+        for i in range(self._map_size[0]):
+            for j in range(self._map_size[1]):
+                result.append( GWState(array( [i,j] )) )
+        return result
         
     def A(self,state=None):
         """All actions in the MDP is state=None, otherwise actions available

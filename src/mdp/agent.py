@@ -43,7 +43,7 @@ class MapAgent(Agent):
     Agent that always follows a deterministic policy given by a dict
     '''
     
-    def __init(self, _policy):
+    def __init__(self, _policy):
         self._policy = _policy
     
     def actions(self, state):
