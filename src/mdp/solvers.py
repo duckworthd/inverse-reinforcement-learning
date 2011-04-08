@@ -22,7 +22,8 @@ class ValueIterator(Solver):
             V = self.iter(mdp, V, 'max')
         return MapAgent(self.iter(mdp, V, 'argmax'))
         
-    def iter(self, mdp, V, max_or_argmax='max'):
+    @classmethod
+    def iter(cls, mdp, V, max_or_argmax='max'):
         ''' 1 step lookahead via the Bellman Update.  final argument should
         be either 'max' or 'argmax', determining whether a state-value function
         or a policy is returned'''
@@ -31,6 +32,9 @@ class ValueIterator(Solver):
         else:
             V_next = {}
         for s in mdp.S():
+            if mdp.is_terminal(s):
+                V[s] = 0.0
+                continue
             q = NumMap()    # Q-states for state s
             for a in mdp.A(s):
                 r = mdp.R(s,a)

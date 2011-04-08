@@ -40,7 +40,7 @@ class Model(object):
         
     @property
     def gamma(self):
-        "Discount factor over time"
+        """Discount factor over time"""
         return self._gamma
     
     @gamma.setter
