@@ -98,34 +98,16 @@ class LSPI(ApproximateSolver):
             samples = simulation.simulate(mdp, agent, initial, self._n_samples)
             
             # evaluate policy approximately
-            w = self.value_weights(samples, mdp.reward_function, mdp.gamma, agent)
-            
-            ###
-#            for s in mdp.S():
-#                for a in mdp.A(s):
-#                    print 'Q(%s,%s) = %f' % (s,a,dot( mdp.reward_function.features(s,a), w ))
-            ###
+            w = self.lstdq(samples, mdp.reward_function, mdp.gamma, agent)
             
             # Define an agent to use argmax over Q(s,a) to choose actions
             agent = LinearQValueAgent(w,mdp)
              
         return LinearQValueAgent(w,mdp)
     
-    def value_weights(self, samples, reward_f, gamma, agent):
+    def lstdq(self, samples, reward_f, gamma, agent):
         '''find weights to approximate value function of a given policy
         Q(s,a) ~~ dot(w,phi(s,a))'''
-#        k = reward_f.dim
-#        B = (1/0.001)*eye(k)
-#        b = zeros(k)
-#        for i in range(len(samples)-1):
-#            (s,a,r) = samples[i]
-#            s_prime = samples[i+1][0]
-#            phi = reward_f.features(s,a)
-#            phi_prime = reward_f.features(s_prime, agent.sample(s_prime))
-#            B = B - dot( dot(B,outer(phi,phi-gamma*phi_prime)), B )/(1+dot(phi-gamma*phi_prime, dot(B, phi)))
-#            b = b + phi*r
-#        w = dot(B,b)
-#        return w
         k = reward_f.dim
         A = zeros( [k,k] )
         b = zeros( k )

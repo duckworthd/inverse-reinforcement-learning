@@ -12,13 +12,14 @@ if __name__ == '__main__':
     numpy.random.seed(0)
     
     map_size = array( [5,5] )
-    box_size = array( [1,2] )
+    box_size = array( [2,2] )
     p_fail = 0.2
     initial = NumMap( {GWState( array( [0,0] ) ):1.0} )
     t_max = 20
     
     reward = GWBoxReward(box_size, map_size)
     reward_weights = numpy.random.rand( reward.dim )
+    reward_weights[-5:] = 0.1*reward_weights[-5:]
     reward.params = reward_weights
     
     model = GWModel(p_fail, map_size)
