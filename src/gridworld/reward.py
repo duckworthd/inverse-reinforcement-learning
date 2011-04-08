@@ -13,6 +13,7 @@ class GWBoxReward(LinearReward):
         self._box_size = numpy.array(box_size, dtype='float32')
         self._map_size = map_size
     
+    @property
     def dim(self):
         return  int( numpy.prod( numpy.ceil( self._map_size/self._box_size ) ) )
     
@@ -23,7 +24,7 @@ class GWBoxReward(LinearReward):
         # what's location of agent in box coordinates
         box_loc = numpy.floor(state.location/self._box_size)
         
-        result = numpy.zeros( self.dim() )
+        result = numpy.zeros( self.dim )
         result[box_loc[0]*box_per_row + box_loc[1] ] = 1
         return result
     

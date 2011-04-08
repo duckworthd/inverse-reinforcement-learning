@@ -16,4 +16,5 @@ def sample(distr):
         total += distr[choice]
         if total >= v:
             return choice
+    a = 1
     raise Exception("Sum of probability < 1.  Did you normalize?")

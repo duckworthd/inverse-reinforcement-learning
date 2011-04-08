@@ -1,5 +1,5 @@
-from util.misc import sample
-from util.NumMap import NumMap
+from util.functions import sample
+from util.classes import NumMap
 import sys
 
 class Agent(object):
@@ -51,4 +51,31 @@ class MapAgent(Agent):
         performing action in state"""
         result = NumMap()
         result[ self._policy[state] ] = 1.0
+        return result
+    
+class QValueAgent(Agent):
+    '''Agent that uses a policy implicitly encoded in a Q-function'''
+
+    def __init__(self, Q):
+        '''
+        Q: a map (state,action) -> [0,1]
+        '''
+        # build a two-stage dictionary for quick processing
+        states = set([s for (s,a) in Q])
+        actions = set([a for (s,a) in Q])
+        
+        QQ = {}
+        for s in states:
+            QQ[s] = NumMap()
+        for s in states:
+            for a in actions:
+                if (s,a) in Q:
+                    QQ[s][a] = Q[(s,a)]
+        self._Q = QQ
+    
+    def actions(self, state):
+        """Returns a function from actions -> [0,1] probability of
+        performing action in state"""
+        result = NumMap()
+        result[ self._Q[state].argmax() ] = 1.0
         return result

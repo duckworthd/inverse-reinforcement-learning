@@ -1,6 +1,6 @@
 from mdp.model import *
 from numpy import array, all, zeros, logical_and
-from util.NumMap import NumMap
+from util.classes import NumMap
 import itertools
 
 class GWState(State):

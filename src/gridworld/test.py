@@ -4,7 +4,7 @@ from numpy import array
 import numpy.random
 import random
 from mdp import agent, simulation
-from util.NumMap import NumMap
+from util.classes import NumMap
 import mdp.solvers
 
 if __name__ == '__main__':
@@ -18,7 +18,7 @@ if __name__ == '__main__':
     t_max = 20
     
     reward = GWBoxReward(box_size, map_size)
-    reward_weights = numpy.random.rand( reward.dim() )
+    reward_weights = numpy.random.rand( reward.dim )
     reward.params = reward_weights
     
     model = GWModel(p_fail, map_size)
@@ -30,7 +30,8 @@ if __name__ == '__main__':
     print [str(action) for action in model.A()]
     
 #    agent = agent.HumanAgent(model)
-    agent = mdp.solvers.ValueIterator(100).solve(model)
+#    agent = mdp.solvers.ValueIterator(100).solve(model)
+    agent = mdp.solvers.LSPI(100,100).solve(model, initial)
     
     results = simulation.simulate(model, agent, initial, t_max)
     for (s,a,r) in results:

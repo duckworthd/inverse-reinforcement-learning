@@ -33,6 +33,32 @@ class NumMap(dict):
         if not key in self:
             return 0.0
         return super(NumMap,self).__getitem__(key)
+    
+class FDict(object):
+    '''
+    A dictionary-like class backed by a function.  Class is read-only
+    and entries cannot be set or enumerated only.  Size is infinite.
+    '''
+    
+    def eval(self, key):
+        '''
+        Equivalent of a key lookup.  Raise KeyError if this function
+        isn't applicable for key's type.
+        '''
+        raise NotImplementedError()
+    
+    def __len__(self):
+        return float('infinity')
+    
+    def __getitem__(self, key):
+        return self.eval(key)
+    
+    def __contains__(self, key):
+        try:
+            self.eval(key)
+            return True
+        except KeyError:
+            return False
 
 if __name__ == '__main__':
     a = NumMap()

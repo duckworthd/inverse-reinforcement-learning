@@ -3,7 +3,7 @@ Created on Mar 31, 2011
 
 @author: duckworthd
 '''
-from util.misc import sample
+from util.functions import sample
 
 def simulate(model, agent, initial, t_max):
     '''
