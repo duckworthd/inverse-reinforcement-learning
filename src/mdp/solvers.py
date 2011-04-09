@@ -4,8 +4,8 @@ Created on Apr 7, 2011
 @author: duckworthd
 '''
 from util.classes import NumMap
-from mdp.agent import Agent, MapAgent, QValueAgent
-from numpy import dot, outer, zeros, eye
+from mdp.agent import Agent, MapAgent, RandomAgent
+from numpy import dot, outer, zeros, eye, vstack
 import numpy.random
 from numpy.linalg import pinv
 import random
@@ -62,14 +62,15 @@ class LinearQValueAgent(Agent):
     '''Implicitly encodes a policy using an MDP's feature function
     and available actions for a given state along with its own weights'''
 
-    def __init__(self,weights, mdp):
+    def __init__(self, weights, feature_f, actions):
         self._w = weights
-        self._mdp = mdp
+        self._ff = feature_f
+        self._A = actions
     
     def actions(self,state):
         actions = NumMap()
-        for a in self._mdp.A(state):
-            phi = self._mdp.reward_function.features(state, a)
+        for a in self._A:
+            phi = self._ff.features(state, a)
             actions[a] = dot( phi, self._w )
         result = NumMap()
         result[actions.argmax()] = 1.0
@@ -82,41 +83,70 @@ class LSPI(ApproximateSolver):
         self._n_iter = n_iter
         self._n_samples = n_samples
         
-    def solve(self, mdp, initial=None):
+    def solve(self, mdp, feature_f):
+        '''Also requires a feature function describing the state state space'''
         # initialize policy randomly
-        k = mdp.reward_function.dim
+        k = feature_f.dim
         w = numpy.random.rand( k )
-        agent = LinearQValueAgent(w, mdp)
+        agent = LinearQValueAgent(w, feature_f, mdp.A())
 
         # initial state distribution
-        if initial == None:
-            s = random.choice(mdp.S())
-            initial = NumMap( {s:1.0} )
+        s = random.choice(mdp.S())
+        initial = NumMap( {s:1.0} )
+        
+        # Generate samples
+        samples = simulation.simulate(mdp, RandomAgent( mdp.A() ), initial, self._n_samples)
+        ## Does the a in (s,a,r,s') need to follow pi(s)?  
+        ##     NO! lspi-short.pdf, 3/4 down page 4
+        ## If deterministic policy used, what about missing (s,a) 
+        ## for a != pi(s), equivalent to zero in stationary distribution 
+        ## of (s,a)~MDP|pi?
         
         for i in range(self._n_iter):
-            # Generate samples
-            samples = simulation.simulate(mdp, agent, initial, self._n_samples)
-            
             # evaluate policy approximately
-            w = self.lstdq(samples, mdp.reward_function, mdp.gamma, agent)
+            w = self.lstdq(samples, feature_f, mdp.gamma, agent)
+            ## Is this correct?  implement exactly first
+#            w = self.lstdq_exact(mdp, agent, feature_f)
             
             # Define an agent to use argmax over Q(s,a) to choose actions
-            agent = LinearQValueAgent(w,mdp)
+            agent = LinearQValueAgent(w,feature_f, mdp.A())
              
-        return LinearQValueAgent(w,mdp)
+        return LinearQValueAgent(w,feature_f, mdp.A())
     
-    def lstdq(self, samples, reward_f, gamma, agent):
+    def lstdq(self, samples, feature_f, gamma, agent):
         '''find weights to approximate value function of a given policy
         Q(s,a) ~~ dot(w,phi(s,a))'''
-        k = reward_f.dim
+        k = feature_f.dim
         A = zeros( [k,k] )
         b = zeros( k )
         for i in range(len(samples)-1):
             (s,a,r) = samples[i]
             s_prime = samples[i+1][0]
-            phi = reward_f.features(s,a)
-            phi_prime = reward_f.features(s_prime, agent.sample(s_prime))
+            phi = feature_f.features(s,a)
+            phi_prime = feature_f.features(s_prime, agent.sample(s_prime))
             A = A + outer(phi,phi - gamma*phi_prime)
             b = b + phi*r
         w = dot( pinv(A), b)
         return w
+    
+    def lstdq_exact(self, mdp, agent, feature_f):
+        '''exact version of lstdq for sanity checking.  Agent assumed deterministic'''
+        S = list( mdp.S() )
+        A = list( mdp.A() )
+        
+        k = feature_f.dim
+        PHI = zeros( [len(S)*len(A), k] )       # each row is phi(s,a)
+        P_PHI = zeros( [len(S)*len(A), k] )     # each row is sum_{s'} P(s'|s,a)*PHI(s',pi(s'))
+        R = zeros( [len(S)*len(A), 1] )         # each row is R(s,a)
+        for (i,s) in enumerate(S):
+            for (j,a) in enumerate(A):
+                PHI[i*len(A)+j,:] = feature_f.features(s,a).T
+                for (s_p,t) in mdp.T(s,a).items():
+                    P_PHI[i*len(A)+j,:] += t*feature_f.features(s_p,agent.sample(s_p)).T 
+                R[i*len(A)+j,0] = mdp.R(s,a)
+        A = dot( PHI.T, PHI - mdp.gamma*P_PHI )
+        b = dot( PHI.T, R )
+        w = dot( pinv(A), b)    # should be weights least squares according to stationary distr.
+        return w
+        
+        

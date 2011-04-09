@@ -79,3 +79,16 @@ class QValueAgent(Agent):
         result = NumMap()
         result[ self._Q[state].argmax() ] = 1.0
         return result
+
+class RandomAgent(Agent):
+    
+    def __init__(self, actions):
+        self._action_distr = NumMap()
+        for a in actions:
+            self._action_distr[a] = 1.0
+        self._action_distr = self._action_distr.normalize()
+    
+    def actions(self, state):
+        """Returns a function from actions -> [0,1] probability of
+        performing action in state"""
+        return self._action_distr

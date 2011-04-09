@@ -1,5 +1,6 @@
 from model import *
 from reward import *
+from etc import *
 from numpy import array
 import numpy.random
 import random
@@ -26,13 +27,15 @@ if __name__ == '__main__':
     model.reward_function = reward
     model.gamma = 0.99
     
+    feature_function = GWCompleteFF(model)
+    
     print reward
     print [str(state) for state in model.S()]
     print [str(action) for action in model.A()]
     
 #    agent = agent.HumanAgent(model)
 #    agent = mdp.solvers.ValueIterator(100).solve(model)
-    agent = mdp.solvers.LSPI(100,100).solve(model, initial)
+    agent = mdp.solvers.LSPI(20,1000).solve(model, feature_function)
     
     results = simulation.simulate(model, agent, initial, t_max)
     for (s,a,r) in results:

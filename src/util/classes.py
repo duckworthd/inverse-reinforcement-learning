@@ -59,6 +59,18 @@ class FDict(object):
             return True
         except KeyError:
             return False
+        
+class FeatureFunction(object):
+    '''A feature function'''
+    @property
+    def dim(self):
+        '''dimension of all output from self.features()'''
+        raise NotImplementedError()
+    
+    def features(self, *args):
+        '''Calculate features for arguments.  Returns
+        numpy.ndarray of length self.dim'''
+        raise NotImplementedError()
 
 if __name__ == '__main__':
     a = NumMap()

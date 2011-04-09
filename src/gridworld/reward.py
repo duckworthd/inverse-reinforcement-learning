@@ -31,7 +31,7 @@ class GWBoxReward(LinearReward):
         
         # action indicator
         action_i = [i for (i,a) in enumerate(self._actions) if a == action][0]
-        result[len(result)-len(self._actions)+action_i-1] = 1
+        result[len(result)-len(self._actions)+action_i] = 1
         
         return result
     
