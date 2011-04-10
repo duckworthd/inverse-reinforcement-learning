@@ -38,8 +38,8 @@ if __name__ == '__main__':
     ## Define player
 #    agent = agent.HumanAgent(model)
 #    agent = mdp.solvers.ValueIterator(100).solve(model)
-    agent = mdp.solvers.QValueIterator(100).solve(model)
-#    agent = mdp.solvers.LSPI(20,1000).solve(model)
+#    agent = mdp.solvers.QValueIterator(100).solve(model)
+    agent = mdp.solvers.LSPI(20,1000).solve(model)
     
     ## Print out world information
     print reward
@@ -47,11 +47,14 @@ if __name__ == '__main__':
     print [str(action) for action in model.A()]
     print '\n'
     
-    ## Print out example Results
-    results = simulation.simulate(model, agent, initial, t_max)
+    ## Estimate policy quality, print out example
+    scores = []
+    for i in range(100):
+        results = simulation.simulate(model, agent, initial, t_max)
+        score = 0
+        for (i, (s,a,r)) in enumerate(results):
+            score += r*model.gamma**i
+        scores.append(score)
     for (s,a,r) in results:
         print (str(s),str(a),r)
-    score = 0
-    for (i, (s,a,r)) in enumerate(results):
-        score += r*model.gamma**i
-    print 'Final Score: %f' % (score,)
+    print 'Average Score: %f' % (sum(scores)/len(scores),)
