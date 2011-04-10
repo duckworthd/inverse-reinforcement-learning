@@ -52,12 +52,11 @@ class IRLExactSolver(object):
             
             # Perform projections to new weights w^(i)
             if i == 0:
-                w = mu_E - mu
                 mu_bar = mu
             else:
                 mmmb = mu - mu_bar
                 mu_bar = mu_bar + numpy.dot( mmmb, mu_E-mu_bar )/numpy.dot( mmmb,mmmb )*mmmb
-                w = mu_E - mu_bar
+            w = mu_E - mu_bar
             t = numpy.linalg.norm(mu_E - mu_bar)
             model.reward_function.params = w
             
@@ -82,8 +81,7 @@ class IRLExactSolver(object):
         
         # Until error is less than 1% (assuming ||phi(s,a)||_{inf} <= 1 for all (s,a) )
         # mu(s,a) = phi(s,a) + gamma*sum_{s'} P(s'|s,a) *sum_{a'} P(a'|s') mu(s',a')
-#        while model.gamma**i >= 0.01:
-        while i < self._max_iter:
+        while model.gamma**i >= 0.01:
             i += 1
             mu2 = {}
             for s in model.S():

@@ -61,8 +61,11 @@ if __name__ == '__main__':
     print 'Average Score: %f' % (evaluate_policy(model, initial, agent, t_max),)
     
     ## Do IRL
-    irl = mdp.solvers.IRLExactSolver(10, mdp.solvers.ValueIterator(100))
+    irl = mdp.solvers.IRLExactSolver(5, mdp.solvers.ValueIterator(100))
     (estimated_agent, estimated_weights) = irl.solve(model, initial, agent) 
     
     ## Estimate estimated policy quality
     print 'Average Score: %f' % (evaluate_policy(model, initial, estimated_agent, t_max),)
+    
+    for s in model.S():
+        print 's = %s, pi*(s) = %s, pi_E(s) = %s' % ( s, agent.sample(s), estimated_agent.sample(s) )
