@@ -38,12 +38,11 @@ class IRLExactSolver(object):
         initial: initial distribution over states
         agent: optimal agent for which we try to learn rewards for
         '''
-        feature_f = model.reward_function
         # Compute feature expectations of agent = mu_E from samples
         mu_E = self.feature_expectations(model, initial, true_agent)
         
         # Pick random policy pi^(0)
-        agent = mdp.agent.RandomAgent(model)
+        agent = mdp.agent.RandomAgent( model.A() )
         
         # Calculate feature expectations of pi^(0) = mu^(0)
         mu = self.feature_expectations(model, initial, agent)
@@ -62,6 +61,8 @@ class IRLExactSolver(object):
             t = numpy.linalg.norm(mu_E - mu_bar)
             model.reward_function.params = w
             
+            print 't = %f' % (t,)
+            
             # Compute optimal policy used R(s,a) = dot( feature_f(s,a), w^(i) )
             agent = self._solver.solve(model)
             
@@ -71,8 +72,37 @@ class IRLExactSolver(object):
         return (agent, w)
     
     def feature_expectations(self, model, initial, agent):
-        # TODO write
-        pass
+        ff = model.reward_function
+        i = 0
+        # Initialize feature expectations
+        mu = {}
+        for s in model.S():
+            for a in model.A(s):
+                mu[ (s,a) ] = numpy.zeros( ff.dim )
+        
+        # Until error is less than 1% (assuming ||phi(s,a)||_{inf} <= 1 for all (s,a) )
+        # mu(s,a) = phi(s,a) + gamma*sum_{s'} P(s'|s,a) *sum_{a'} P(a'|s') mu(s',a')
+#        while model.gamma**i >= 0.01:
+        while i < self._max_iter:
+            i += 1
+            mu2 = {}
+            for s in model.S():
+                for a in model.A(s):
+                    v = ff.features(s,a)
+                    for (s_prime,t_s) in model.T(s,a).items():
+                        for (a_prime,t_a) in agent.actions(s_prime).items():
+                            v += model.gamma*t_s*t_a*mu[ (s_prime, a_prime) ]
+                    mu2[ (s,a) ] = v
+            mu = mu2
+        result = numpy.zeros( ff.dim )
+        # result = sum_{s} P(s) * sum_{a} P(a|s)*mu(s,a)
+        for s in initial:
+            pi = agent.actions(s)
+            for a in pi:
+                result += initial[s]*pi[a]*mu[ (s,a) ]
+        return result
+            
+            
     
 class IRLApprximateSolver(object):
     '''Solves the inverse reinforcement learning problem'''

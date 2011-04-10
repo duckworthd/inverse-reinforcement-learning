@@ -9,13 +9,23 @@ from util.classes import NumMap
 import mdp.solvers
 import mdp.etc
 
+def evaluate_policy(model, initial, agent, t_max=100):
+    scores = []
+    for i in range(100):
+        results = simulation.simulate(model, agent, initial, t_max)
+        score = 0
+        for (i, (s,a,r)) in enumerate(results):
+            score += r*model.gamma**i
+        scores.append(score)
+    return sum(scores)/len(scores)
+
 if __name__ == '__main__':
     random.seed(0)
     numpy.random.seed(0)
     
     ## Initialize constants
-    map_size = array( [5,5] )
-    box_size = array( [2,2] )
+    map_size = array( [3,2] )
+    box_size = array( [1,1] )
     p_fail = 0.2
     initial = NumMap( {GWState( array( [0,0] ) ):1.0} )
     t_max = 20
@@ -37,9 +47,9 @@ if __name__ == '__main__':
     
     ## Define player
 #    agent = agent.HumanAgent(model)
-#    agent = mdp.solvers.ValueIterator(100).solve(model)
+    agent = mdp.solvers.ValueIterator(100).solve(model)
 #    agent = mdp.solvers.QValueIterator(100).solve(model)
-    agent = mdp.solvers.LSPI(20,1000).solve(model)
+#    agent = mdp.solvers.LSPI(20,1000).solve(model)
     
     ## Print out world information
     print reward
@@ -47,14 +57,12 @@ if __name__ == '__main__':
     print [str(action) for action in model.A()]
     print '\n'
     
-    ## Estimate policy quality, print out example
-    scores = []
-    for i in range(100):
-        results = simulation.simulate(model, agent, initial, t_max)
-        score = 0
-        for (i, (s,a,r)) in enumerate(results):
-            score += r*model.gamma**i
-        scores.append(score)
-    for (s,a,r) in results:
-        print (str(s),str(a),r)
-    print 'Average Score: %f' % (sum(scores)/len(scores),)
+    ## Estimate policy quality
+    print 'Average Score: %f' % (evaluate_policy(model, initial, agent, t_max),)
+    
+    ## Do IRL
+    irl = mdp.solvers.IRLExactSolver(10, mdp.solvers.ValueIterator(100))
+    (estimated_agent, estimated_weights) = irl.solve(model, initial, agent) 
+    
+    ## Estimate estimated policy quality
+    print 'Average Score: %f' % (evaluate_policy(model, initial, estimated_agent, t_max),)
