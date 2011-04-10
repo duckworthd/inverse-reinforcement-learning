@@ -38,8 +38,8 @@ if __name__ == '__main__':
     ## Define player
 #    agent = agent.HumanAgent(model)
 #    agent = mdp.solvers.ValueIterator(100).solve(model)
-#    agent = mdp.solvers.QValueIterator(100).solve(model)
-    agent = mdp.solvers.LSPI(20,1000).solve(model)
+    agent = mdp.solvers.QValueIterator(100).solve(model)
+#    agent = mdp.solvers.LSPI(20,1000).solve(model)
     
     ## Print out world information
     print reward
