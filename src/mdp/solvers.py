@@ -3,13 +3,13 @@ Created on Apr 7, 2011
 
 @author: duckworthd
 '''
-from util.classes import NumMap
-from mdp.agent import Agent, MapAgent, RandomAgent
-from numpy import dot, outer, zeros, eye, vstack
+import util.classes
+import mdp.agent
 import numpy.random
-from numpy.linalg import pinv
+import numpy.linalg
 import random
-from mdp import simulation
+import mdp.simulation
+import mdp.etc
 
 class ExactSolver(object):
     def solve(self, mdp):
@@ -25,24 +25,65 @@ class ApproximateSolver(object):
 
 class IRLExactSolver(object):
     '''Solves the inverse reinforcement learning problem'''
-    def solve(self, mdp, feature_f, agent):
+    def __init__(self, max_iter, mdp_solver):
+        self._max_iter = max_iter
+        self._solver = mdp_solver
+    
+    def solve(self, model, initial, true_agent):
         '''
         Returns a pair (agent, weights) where the agent attempts to mimic the
         argument agent via solving an MDP with R(s,a) = feature_f.features(s,a)*weights
         
-        feature_f: linear feature function for which weights will be learned
+        mdp: an MDP with a linear reward functions.  Parameters WILL be overwritten.
+        initial: initial distribution over states
         agent: optimal agent for which we try to learn rewards for
         '''
+        feature_f = model.reward_function
+        # Compute feature expectations of agent = mu_E from samples
+        mu_E = self.feature_expectations(mdp, initial, true_agent)
+        
+        # Pick random policy pi^(0)
+        agent = mdp.agent.RandomAgent(mdp)
+        
+        # Calculate feature expectations of pi^(0) = mu^(0)
+        mu = self.feature_expectations(mdp, initial, agent)
+        
+        for i in range(self._max_iter):
+            # TODO: Use CVXOPT for max-margin method
+            
+            # Perform projections to new weights w^(i)
+            if i == 0:
+                w = mu_E - mu
+                mu_bar = mu
+            else:
+                mmmb = mu - mu_bar
+                mu_bar = mu_bar + numpy.dot( mmmb, mu_E-mu_bar )/numpy.dot( mmmb,mmmb )*mmmb
+                w = mu_E - mu_bar
+            t = numpy.linalg.norm(mu_E - mu_bar)
+            mdp.reward_function.params = w
+            
+            # Compute optimal policy used R(s,a) = dot( feature_f(s,a), w^(i) )
+            agent = self._solver.solve(mdp)
+            
+            # Compute feature expectations of pi^(i) = mu^(i)
+            mu = self.feature_expectations(mdp, initial, agent)
+        
+        return (agent, w)
+    
+    def feature_expectations(self, mdp, initial, agent):
+        # TODO write
+        pass
     
 class IRLApprximateSolver(object):
     '''Solves the inverse reinforcement learning problem'''
-    def solve(self, mdp, feature_f, samples):
+    def solve(self, mdp, initial, samples):
         '''
         Returns a pair (agent, weights) where the agent attempts to generalize
         from the behavior observed in samples and weights is what was combined with
         the MDP to generate agent.
         
-        feature_f: linear feature function for which weights will be learned
+        mdp: an MDP with a linear reward functions.  Parameters WILL be overwritten.
+        initial: initial distribution over states
         samples: sample trajectories [ (s_t,a_t) ] of the (supposedly) optimal
             policy.
         '''
@@ -52,30 +93,30 @@ class ValueIterator(ExactSolver):
         self._max_iter = max_iter
         
     def solve(self, mdp):
-        V = NumMap()
+        V = util.classes.NumMap()
         for i in range(self._max_iter):
             V = self.iter(mdp, V, 'max')
-        return MapAgent(self.iter(mdp, V, 'argmax'))
+        return mdp.agent.MapAgent(self.iter(mdp, V, 'argmax'))
         
     @classmethod
-    def iter(cls, mdp, V, max_or_argmax='max'):
+    def iter(cls, model, V, max_or_argmax='max'):
         ''' 1 step lookahead via the Bellman Update.  final argument should
         be either 'max' or 'argmax', determining whether a state-value function
         or a policy is returned'''
         if max_or_argmax == 'max':
-            V_next = NumMap()
+            V_next = util.classes.NumMap()
         else:
             V_next = {}
-        for s in mdp.S():
-            if mdp.is_terminal(s):
+        for s in model.S():
+            if model.is_terminal(s):
                 V[s] = 0.0
                 continue
-            q = NumMap()    # Q-states for state s
-            for a in mdp.A(s):
-                r = mdp.R(s,a)
-                T = mdp.T(s,a)
+            q = util.classes.NumMap()    # Q-states for state s
+            for a in model.A(s):
+                r = model.R(s,a)
+                T = model.T(s,a)
                 expected_rewards = [T[s_prime]*V[s_prime] for s_prime in T]
-                q[a] = r + mdp.gamma*sum(expected_rewards)
+                q[a] = r + model.gamma*sum(expected_rewards)
             if max_or_argmax == 'max':
                 V_next[s] = q.max()
             else:
@@ -89,24 +130,24 @@ class QValueIterator(ExactSolver):
         
     def solve(self, mdp):
         '''Returns an Agent directed by a policy determined by this solver'''
-        Q = NumMap()
+        Q = util.classes.NumMap()
         for i in range(self._max_iter):
             Q = self.iter(mdp, Q)
         policy = {}
         for s in mdp.S():
-            actions = NumMap()
+            actions = util.classes.NumMap()
             for a in mdp.A(s):
                 actions[a] = Q[ (s,a) ]
             policy[s] = actions.argmax()
-        return MapAgent(policy)
+        return mdp.agent.MapAgent(policy)
     
     @classmethod
-    def iter(cls, mdp, Q):
-        V = NumMap()
+    def iter(cls, model, Q):
+        V = util.classes.NumMap()
         # Compute V(s) = max_{a} Q(s,a)
-        for s in mdp.S():
-            V_s = NumMap()
-            for a in mdp.A(s):
+        for s in model.S():
+            V_s = util.classes.NumMap()
+            for a in model.A(s):
                 V_s[a] = Q[ (s,a) ]
             if len(V_s) > 0:
                 V[s] = V_s.max()
@@ -114,53 +155,43 @@ class QValueIterator(ExactSolver):
                 V[s] = 0.0
         
         # QQ(s,a) = R(s,a) + gamma*sum_{s'} T(s,a,s')*V(s') 
-        QQ = NumMap()
-        for s in mdp.S():
-            for a in mdp.A(s):
-                value = mdp.R(s,a)
-                T = mdp.T(s,a)
-                value += sum( [mdp.gamma*t*V[s_prime] for (s_prime,t) in  T.items()] )
+        QQ = util.classes.NumMap()
+        for s in model.S():
+            for a in model.A(s):
+                value = model.R(s,a)
+                T = model.T(s,a)
+                value += sum( [model.gamma*t*V[s_prime] for (s_prime,t) in  T.items()] )
                 QQ[ (s,a) ] = value
         return QQ
     
-class LinearQValueAgent(Agent):
-    '''Implicitly encodes a policy using an MDP's feature function
-    and available actions for a given state along with its own weights'''
 
-    def __init__(self, weights, feature_f, actions):
-        self._w = weights
-        self._ff = feature_f
-        self._A = actions
-    
-    def actions(self,state):
-        actions = NumMap()
-        for a in self._A:
-            phi = self._ff.features(state, a)
-            actions[a] = dot( phi, self._w )
-        result = NumMap()
-        result[actions.argmax()] = 1.0
-        return result
         
 class LSPI(ApproximateSolver):
     '''Least Squares Policy Iteration (Lagoudakis, Parr 2001)'''
     
-    def __init__(self, n_iter, n_samples):
+    def __init__(self, n_iter, n_samples, feature_f=None):
         self._n_iter = n_iter
         self._n_samples = n_samples
+        self._feature_f = feature_f
         
-    def solve(self, mdp, feature_f):
+    def solve(self, model):
         '''Also requires a feature function describing the state state space'''
+        if self._feature_f == None:
+            feature_f = mdp.etc.CompleteFeatureFunction(model)
+        else:
+            feature_f = self._feature_f
+        
         # initialize policy randomly
         k = feature_f.dim
         w = numpy.random.rand( k )
-        agent = LinearQValueAgent(w, feature_f, mdp.A())
+        agent = mdp.etc.LinearQValueAgent(w, feature_f, model.A())
 
         # initial state distribution
-        s = random.choice(mdp.S())
-        initial = NumMap( {s:1.0} )
+        s = random.choice(model.S())
+        initial = util.classes.NumMap( {s:1.0} )
         
         # Generate samples
-        samples = simulation.simulate(mdp, RandomAgent( mdp.A() ), initial, self._n_samples)
+        samples = mdp.simulation.simulate(mdp, mdp.agent.RandomAgent( model.A() ), initial, self._n_samples)
         ## Does the a in (s,a,r,s') need to follow pi(s)?  
         ##     NO! lspi-short.pdf, 3/4 down page 4
         ## If deterministic policy used, what about missing (s,a) 
@@ -169,49 +200,49 @@ class LSPI(ApproximateSolver):
         
         for i in range(self._n_iter):
             # evaluate policy approximately
-            w = self.lstdq(samples, feature_f, mdp.gamma, agent)
+            w = self.lstdq(samples, feature_f, model.gamma, agent)
             ## Is this correct?  implement exactly first
 #            w = self.lstdq_exact(mdp, agent, feature_f)
             
             # Define an agent to use argmax over Q(s,a) to choose actions
-            agent = LinearQValueAgent(w,feature_f, mdp.A())
+            agent = mdp.etc.LinearQValueAgent(w,feature_f, model.A())
              
-        return LinearQValueAgent(w,feature_f, mdp.A())
+        return mdp.etc.LinearQValueAgent(w,feature_f, model.A())
     
     def lstdq(self, samples, feature_f, gamma, agent):
         '''find weights to approximate value function of a given policy
         Q(s,a) ~~ dot(w,phi(s,a))'''
         k = feature_f.dim
-        A = zeros( [k,k] )
-        b = zeros( k )
+        A = numpy.zeros( [k,k] )
+        b = numpy.zeros( k )
         for i in range(len(samples)-1):
             (s,a,r) = samples[i]
             s_prime = samples[i+1][0]
             phi = feature_f.features(s,a)
             phi_prime = feature_f.features(s_prime, agent.sample(s_prime))
-            A = A + outer(phi,phi - gamma*phi_prime)
+            A = A + numpy.outer(phi,phi - gamma*phi_prime)
             b = b + phi*r
-        w = dot( pinv(A), b)
+        w = numpy.dot( numpy.linalg.pinv(A), b)
         return w
     
-    def lstdq_exact(self, mdp, agent, feature_f):
+    def lstdq_exact(self, model, agent, feature_f):
         '''exact version of lstdq for sanity checking.  Agent assumed deterministic'''
-        S = list( mdp.S() )
-        A = list( mdp.A() )
+        S = list( model.S() )
+        A = list( model.A() )
         
         k = feature_f.dim
-        PHI = zeros( [len(S)*len(A), k] )       # each row is phi(s,a)
-        P_PHI = zeros( [len(S)*len(A), k] )     # each row is sum_{s'} P(s'|s,a)*PHI(s',pi(s'))
-        R = zeros( [len(S)*len(A), 1] )         # each row is R(s,a)
+        PHI = numpy.zeros( [len(S)*len(A), k] )       # each row is phi(s,a)
+        P_PHI = numpy.zeros( [len(S)*len(A), k] )     # each row is sum_{s'} P(s'|s,a)*PHI(s',pi(s'))
+        R = numpy.zeros( [len(S)*len(A), 1] )         # each row is R(s,a)
         for (i,s) in enumerate(S):
             for (j,a) in enumerate(A):
                 PHI[i*len(A)+j,:] = feature_f.features(s,a).T
-                for (s_p,t) in mdp.T(s,a).items():
+                for (s_p,t) in model.T(s,a).items():
                     P_PHI[i*len(A)+j,:] += t*feature_f.features(s_p,agent.sample(s_p)).T 
-                R[i*len(A)+j,0] = mdp.R(s,a)
-        A = dot( PHI.T, PHI - mdp.gamma*P_PHI )
-        b = dot( PHI.T, R )
-        w = dot( pinv(A), b)    # should be weights least squares according to stationary distr.
+                R[i*len(A)+j,0] = model.R(s,a)
+        A = numpy.dot( PHI.T, PHI - model.gamma*P_PHI )
+        b = numpy.dot( PHI.T, R )
+        w = numpy.dot( numpy.linalg.pinv(A), b)    # should be weights least squares according to stationary distr.
         return w
         
         

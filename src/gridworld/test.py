@@ -7,6 +7,7 @@ import random
 from mdp import agent, simulation
 from util.classes import NumMap
 import mdp.solvers
+import mdp.etc
 
 if __name__ == '__main__':
     random.seed(0)
@@ -31,14 +32,14 @@ if __name__ == '__main__':
     model.gamma = 0.99
     
     ## Define feature function (approximate methods only)
-    feature_function = GWCompleteFF(model)
+    feature_function = mdp.etc.CompleteFeatureFunction(model)
 #    feature_function = GWLocationFF(model)
     
     ## Define player
 #    agent = agent.HumanAgent(model)
 #    agent = mdp.solvers.ValueIterator(100).solve(model)
-    agent = mdp.solvers.QValueIterator(100).solve(model)
-#    agent = mdp.solvers.LSPI(20,1000).solve(model, feature_function)
+#    agent = mdp.solvers.QValueIterator(100).solve(model)
+    agent = mdp.solvers.LSPI(20,1000).solve(model)
     
     ## Print out world information
     print reward
