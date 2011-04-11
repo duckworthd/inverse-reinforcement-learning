@@ -10,6 +10,7 @@ import numpy.linalg
 import random
 import mdp.simulation
 import mdp.etc
+import math
 
 class ExactSolver(object):
     def solve(self, model):
@@ -104,7 +105,17 @@ class IRLExactSolver(object):
     
 class IRLApprximateSolver(object):
     '''Solves the inverse reinforcement learning problem'''
-    def solve(self, model, initial, samples):
+    def __init__(self, max_iter, mdp_solver, n_samples=500):
+        '''
+        max_iter: maximum number of times to iterate policies
+        mdp_solver: class that implements self.solve(model)
+        n_samples: number of samples used to estimate feature expectations
+        '''
+        self._max_iter = max_iter
+        self._solver = mdp_solver
+        self._n_samples = n_samples
+        
+    def solve(self, model, initial, true_samples):
         '''
         Returns a pair (agent, weights) where the agent attempts to generalize
         from the behavior observed in samples and weights is what was combined with
@@ -115,6 +126,56 @@ class IRLApprximateSolver(object):
         samples: sample trajectories [ (s_t,a_t) ] of the (supposedly) optimal
             policy.
         '''
+        # Compute feature expectations of agent = mu_E from samples
+        mu_E = self.feature_expectations(model, true_samples)
+        
+        # Pick random policy pi^(0)
+        agent = mdp.agent.RandomAgent( model.A() )
+        
+        # Calculate feature expectations of pi^(0) = mu^(0)
+        samples = self.generate_samples(model, agent, initial)
+        mu = self.feature_expectations(model, samples)
+        
+        for i in range(self._max_iter):
+            # Perform projections to new weights w^(i)
+            if i == 0:
+                mu_bar = mu
+            else:
+                mmmb = mu - mu_bar
+                mu_bar = mu_bar + numpy.dot( mmmb, mu_E-mu_bar )/numpy.dot( mmmb,mmmb )*mmmb
+            w = mu_E - mu_bar
+            t = numpy.linalg.norm(mu_E - mu_bar)
+            model.reward_function.params = w
+            
+            print 't = %f' % (t,)
+            
+            # Compute optimal policy used R(s,a) = dot( feature_f(s,a), w^(i) )
+            agent = self._solver.solve(model)
+            
+            # Compute feature expectations of pi^(i) = mu^(i)
+            samples = self.generate_samples(model, agent, initial)
+            mu = self.feature_expectations(model, samples)
+        
+        return (agent, w)
+    
+    def generate_samples(self, model, agent, initial):
+        # t_max such that gamma^t_max = 0.01
+        t_max = math.ceil( math.log(0.01)/math.log(model.gamma) )
+        result = []
+        for i in range(self._n_samples):
+            result.append( mdp.simulation.simulate(model, agent, initial, t_max) )
+        return result
+            
+    def feature_expectations(self, model, samples):
+        '''Compute empirical feature expectations'''
+        ff = model.reward_function
+        result = numpy.zeros( ff.dim )
+        for sample in samples:
+            for (t,sa) in enumerate(sample):
+                s = sa[0]
+                a = sa[1]
+                result += (model.gamma**t)*ff.features(s,a)
+        return (1.0/len(samples))*result
     
 class ValueIterator(ExactSolver):
     def __init__(self, max_iter):

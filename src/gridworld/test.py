@@ -39,7 +39,7 @@ if __name__ == '__main__':
     ## Create Model
     model = GWModel(p_fail, map_size)
     model.reward_function = reward
-    model.gamma = 0.99
+    model.gamma = 0.9
     
     ## Define feature function (approximate methods only)
     feature_function = mdp.etc.CompleteFeatureFunction(model)
@@ -61,8 +61,11 @@ if __name__ == '__main__':
     print 'Average Score: %f' % (evaluate_policy(model, initial, agent, t_max),)
     
     ## Do IRL
-    irl = mdp.solvers.IRLExactSolver(5, mdp.solvers.ValueIterator(100))
-    (estimated_agent, estimated_weights) = irl.solve(model, initial, agent) 
+#    irl = mdp.solvers.IRLExactSolver(20, mdp.solvers.ValueIterator(100))
+#    (estimated_agent, estimated_weights) = irl.solve(model, initial, agent) 
+    irl = mdp.solvers.IRLApprximateSolver(20, mdp.solvers.ValueIterator(100), 100)
+    samples = irl.generate_samples(model, agent, initial)
+    (estimated_agent, estimated_weights) = irl.solve(model, initial, samples) 
     
     ## Estimate estimated policy quality
     print 'Average Score: %f' % (evaluate_policy(model, initial, estimated_agent, t_max),)
