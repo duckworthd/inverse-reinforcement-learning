@@ -34,6 +34,14 @@ class NumMap(dict):
             return 0.0
         return super(NumMap,self).__getitem__(key)
     
+    def __str__(self):
+        result_list = ["{"]
+        for (k,v) in self.items():
+            result_list.append( '{}:{:4.4f}, '.format(str(k), v) )
+        result_list[-1] = result_list[-1][:-2]
+        result_list.append('}')
+        return ''.join(result_list)
+    
 class FDict(object):
     '''
     A dictionary-like class backed by a function.  Class is read-only

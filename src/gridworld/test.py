@@ -24,8 +24,8 @@ if __name__ == '__main__':
     numpy.random.seed(0)
     
     ## Initialize constants
-    map_size = array( [3,2] )
-    box_size = array( [1,1] )
+    map_size = array( [5,5] )
+    box_size = array( [2,2] )
     p_fail = 0.2
     initial = NumMap( {GWState( array( [0,0] ) ):1.0} )
     t_max = 20
@@ -47,7 +47,9 @@ if __name__ == '__main__':
     
     ## Define player
 #    agent = agent.HumanAgent(model)
-    agent = mdp.solvers.ValueIterator(100).solve(model)
+#    agent = mdp.solvers.ValueIterator(100).solve(model)
+#    agent = mdp.solvers.PolicyIterator(20, mdp.solvers.ExactPolicyEvaluator(100)).solve(model)
+    agent = mdp.solvers.PolicyIterator(20, mdp.solvers.ApproximatePolicyEvaluator(100,50)).solve(model)
 #    agent = mdp.solvers.QValueIterator(100).solve(model)
 #    agent = mdp.solvers.LSPI(20,1000).solve(model)
     
@@ -58,17 +60,19 @@ if __name__ == '__main__':
     print '\n'
     
     ## Estimate policy quality
+    for (s,a,r) in simulation.simulate(model, agent, initial, t_max):
+        print '%s, %s, %f' % (s,a,r)
     print 'Average Score: %f' % (evaluate_policy(model, initial, agent, t_max),)
     
-    ## Do IRL
-#    irl = mdp.solvers.IRLExactSolver(20, mdp.solvers.ValueIterator(100))
-#    (estimated_agent, estimated_weights) = irl.solve(model, initial, agent) 
-    irl = mdp.solvers.IRLApprximateSolver(20, mdp.solvers.ValueIterator(100), 100)
-    samples = irl.generate_samples(model, agent, initial)
-    (estimated_agent, estimated_weights) = irl.solve(model, initial, samples) 
-    
-    ## Estimate estimated policy quality
-    print 'Average Score: %f' % (evaluate_policy(model, initial, estimated_agent, t_max),)
-    
-    for s in model.S():
-        print 's = %s, pi*(s) = %s, pi_E(s) = %s' % ( s, agent.sample(s), estimated_agent.sample(s) )
+#    ## Do IRL
+##    irl = mdp.solvers.IRLExactSolver(20, mdp.solvers.ValueIterator(100))
+##    (estimated_agent, estimated_weights) = irl.solve(model, initial, agent) 
+#    irl = mdp.solvers.IRLApprximateSolver(20, mdp.solvers.ValueIterator(100), 100)
+#    samples = irl.generate_samples(model, agent, initial)
+#    (estimated_agent, estimated_weights) = irl.solve(model, initial, samples) 
+#    
+#    ## Estimate estimated policy quality
+#    print 'Average Score: %f' % (evaluate_policy(model, initial, estimated_agent, t_max),)
+#    
+#    for s in model.S():
+#        print 's = %s, pi*(s) = %s, pi_E(s) = %s' % ( s, agent.sample(s), estimated_agent.sample(s) )
