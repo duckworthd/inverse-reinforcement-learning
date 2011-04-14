@@ -27,7 +27,7 @@ class Model(object):
         
     def R(self,state, action):
         """Returns a reward for performing action in state"""
-        return self.reward.reward(state,action)
+        return self.reward_function.reward(state,action)
         
     def S(self):
         """All states in the MDP"""

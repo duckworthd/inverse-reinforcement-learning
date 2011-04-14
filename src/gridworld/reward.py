@@ -8,11 +8,11 @@ class GWBoxReward(LinearReward):
     a box of a specific size
     '''
     
-    def __init__(self, box_size, map_size):
+    def __init__(self, box_size, map):
         super(GWBoxReward,self).__init__()
         self._box_size = numpy.array(box_size, dtype='float32')
-        self._map_size = map_size
-        self._actions = list( GWModel(0.0,map_size).A() )
+        self._map_size = numpy.array( map.shape )
+        self._actions = list( GWModel(0.0).A() )
     
     @property
     def dim(self):
@@ -35,8 +35,10 @@ class GWBoxReward(LinearReward):
         
         return result
     
-        
     def __str__(self):
+        return 'GWBoxReward [box_size={}, map_size={}]'.format(self._box_size, self._map_size)
+        
+    def info(self):
         result = 'GWBoxReward:\n'
         for a in self._actions:
             result += str(a) + '\n'

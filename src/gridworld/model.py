@@ -1,5 +1,6 @@
 from mdp.model import *
-from numpy import array, all, zeros, logical_and
+import numpy as np
+from numpy import array, all, zeros, logical_and, ones
 from util.classes import NumMap
 import itertools
 
@@ -68,7 +69,8 @@ class GWAction(Action):
         
 class GWModel(Model):
     
-    def __init__(self, p_fail=0.2, map_size=(4,3), terminal=(-1,-1)):
+    def __init__(self, p_fail=0.2, map=ones( [4,3] ), 
+                 terminal=GWState(np.array( [-1,-1] )) ):
         super(GWModel,self)
         
         up      = array( [0, 1] )
@@ -78,7 +80,7 @@ class GWModel(Model):
         
         self._actions = [GWAction(up), GWAction(down), GWAction(left), GWAction(right)]
         self._p_fail = float(p_fail)
-        self._map_size = map_size
+        self._map = map
         self._terminal = terminal
     
     def T(self,state,action):
@@ -99,17 +101,12 @@ class GWModel(Model):
                 result[s_p] += p  
         return result 
         
-        
-    def R(self,state, action):
-        """Returns a reward for performing action in state"""
-        return self.reward_function.reward(state,action)
-        
     def S(self):
         """All states in the MDP"""
         result = []
-        for i in range(self._map_size[0]):
-            for j in range(self._map_size[1]):
-                result.append( GWState(array( [i,j] )) )
+        nz = np.transpose( np.nonzero(self._map == 1) )
+        for ind in nz:
+            result.append( GWState( ind ) )
         return result
         
     def A(self,state=None):
@@ -119,11 +116,28 @@ class GWModel(Model):
     
     def is_terminal(self, state):
         '''returns whether or not a state is terminal'''
-        return all(state.location == self._terminal)
+        return all(state == self._terminal)
     
     def is_legal(self,state):
-        return all( logical_and(state.location >= zeros(2), state.location < self._map_size ) )
+        loc = state.location
+        (r,c) = self._map.shape
+        
+        return loc[0] >= 0 and loc[0] < r and \
+            loc[1] >= 0 and loc[1] < c and \
+            self._map[ loc[0],loc[1] ] == 1
     
     def __str__(self):
-        format = 'GWModel [p_fail={},map_size={},terminal={}]'
-        return format.format(self._p_fail,self._map_size,self._terminal)
+        format = 'GWModel [p_fail={},terminal={}]'
+        return format.format(self._p_fail, self._terminal)
+    
+    def info(self):
+        result = [str(self) + '\n']
+        map_size = self._map.shape
+        for i in reversed(range(map_size[0])):
+            for j in range(map_size[1]):
+                if self._map[i,j] == 1:
+                    result.append( '[O]' )
+                else:
+                    result.append( '[X]')
+            result.append( '\n' )
+        return ''.join(result)

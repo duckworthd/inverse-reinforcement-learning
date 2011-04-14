@@ -20,11 +20,7 @@ class HumanAgent(Agent):
         self._model = model
     
     def actions(self,state):
-        result = NumMap()
-        for action in self._model.A(state).keys():
-            result[action] = 1.0
-        return result.normalize()
-
+        raise NotImplementedError()
     
     def sample(self,state):
         print(state)
