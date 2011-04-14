@@ -99,15 +99,15 @@ class VacuumWorldTest(unittest.TestCase):
                                                         [0, 1, 0]]) )
         a = vwmodel.VWMoveAction( np.array([0,1]) )
         T = self._model1.T(s,a)
-        act_prob = {(1,2):(1-p), (1,1):2*p/3, (1,0):p/3 }
+        act_prob = {(1,2):(1-p), (1,1):2*p/3, (1,0):p/3 }   # probability of robot's location
         for loc in [ (1,2), (1,1), (1,0) ]:
             for layout in util.functions.bitstrings(3):
                 inds = [(1,0), (1,2), (0,2)]
-                dust = np.array( s.dust )
-                dust = util.functions.sparse_matrix( (2,3), inds, layout, dust )
-                n_dust = np.sum(dust)
+                dust = np.array( s.dust )   # copy current state's dust
+                dust = util.functions.sparse_matrix( (2,3), inds, layout, dust )    # update dust
+                n_dust = np.sum(dust)       # numbero of dust on the map
                 s_p = vwmodel.VWState(np.array(loc), dust)
-                dust_prob = ( q**(n_dust-2) )*( (1-q)**(5-n_dust) )
+                dust_prob = ( q**(n_dust-2) )*( (1-q)**(5-n_dust) ) # probability of dust layout
                 self.assertTrue(np.abs( T[s_p] - act_prob[loc]*dust_prob) < 1e-10)
                 
         # Test a suck Action

@@ -79,10 +79,19 @@ class VWModel(mdp.model.Model):
     A Vacuum world where a single robot wanders around picking up dust
     that appears randomly throughout time. 
     """
-    def __init__(self, map=np.ones([4,3]), act_fail=0.2, dust_prob=0.01):
+    def __init__(self, map=np.ones([4,3]), p_fail=0.2, p_dust=0.01):
+        '''
+        map: a boolean 2D ndarray with 1's for locations the robot can be at
+            and 0s otherwise
+        p_fail: the probability that a move action will fail.  Probability mass of
+            p_fail will be split equally between all move actions other than the one
+            intended
+        p_dust: probability that each tile will become dusty in a time step.  Each
+            tile treated independently.
+        '''
         self._map = map
-        self._act_fail = act_fail
-        self._dust_prob = dust_prob
+        self._p_fail = p_fail
+        self._p_dust = p_dust
         
         up      = np.array( [0,1] )
         left    = np.array( [-1,0])
@@ -102,9 +111,9 @@ class VWModel(mdp.model.Model):
             for a in self._move_actions:
                 p = 0
                 if a == action:
-                    p = 1 - self._act_fail
+                    p = 1 - self._p_fail
                 else:
-                    p = self._act_fail / ( len(self._move_actions)-1 )
+                    p = self._p_fail / ( len(self._move_actions)-1 )
                 s_p = a.apply(state)
                 if not self.is_legal(s_p):
                     robot_locs[state] += p
@@ -126,10 +135,10 @@ class VWModel(mdp.model.Model):
                 new_dust = util.functions.sparse_matrix(self._map.shape, 
                                                         no_dust, dust_layout, 
                                                         np.array( state.dust ))
-                # p(layout) = dust_prob^{# of new dust introduced) * 
-                #            (1-dust_prob)^{# of places dust didn't appear}
-                dust_locs[VWState(state.robot, new_dust)] = ( self._dust_prob**np.sum(dust_layout) ) *\
-                    ( (1-self._dust_prob)**(len(dust_layout)-np.sum(dust_layout)) )
+                # p(layout) = p_dust^{# of new dust introduced) * 
+                #            (1-p_dust)^{# of places dust didn't appear}
+                dust_locs[VWState(state.robot, new_dust)] = ( self._p_dust**np.sum(dust_layout) ) *\
+                    ( (1-self._p_dust)**(len(dust_layout)-np.sum(dust_layout)) )
         else:
             dust_locs[VWState( state.robot, np.array(state.dust) )] = 1.0
         
