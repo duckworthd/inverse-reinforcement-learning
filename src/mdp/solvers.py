@@ -59,11 +59,13 @@ class IRLExactSolver(object):
                 mu_bar = mu_bar + numpy.dot( mmmb, mu_E-mu_bar )/numpy.dot( mmmb,mmmb )*mmmb
             w = mu_E - mu_bar
             t = numpy.linalg.norm(mu_E - mu_bar)
-            model.reward_function.params = w
             
             print 't = %f' % (t,)
+            if t < 1e-10:
+                break
             
             # Compute optimal policy used R(s,a) = dot( feature_f(s,a), w^(i) )
+            model.reward_function.params = w
             agent = self._solver.solve(model)
             
             # Compute feature expectations of pi^(i) = mu^(i)
@@ -183,6 +185,7 @@ class ValueIterator(MDPSolver):
         V = util.classes.NumMap()
         for i in range(self._max_iter):
             V = self.iter(model, V, 'max')
+            print 'Iteration #{}'.format(i)
         return mdp.agent.MapAgent(self.iter(model, V, 'argmax'))
         
     @classmethod

@@ -42,6 +42,12 @@ class NumMap(dict):
         result_list.append('}')
         return ''.join(result_list)
     
+    def info(self):
+        result = ['NumMap:\n']
+        for (k,v) in self.items():
+            result.append( '\t{} ===== {:4.4f}\n'.format(str(k), v))
+        return ''.join(result)
+    
 class FDict(object):
     '''
     A dictionary-like class backed by a function.  Class is read-only

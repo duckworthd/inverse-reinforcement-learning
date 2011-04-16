@@ -16,7 +16,8 @@ def sample(distr):
         total += distr[choice]
         if total >= v:
             return choice
-    raise Exception("Sum of probability < 1.  Did you normalize?")
+    raise Exception( "Sum of probability = {} < 1.  Did you normalize? {}".format(sum(distr.values()),
+                                                                                  distr) )
 
 def bitstrings(n):
     '''

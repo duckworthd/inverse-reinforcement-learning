@@ -1,6 +1,7 @@
 import unittest
 import numpy as np
 import vacuumworld.model as vwmodel
+import vacuumworld.reward as vwreward
 import util.functions
 
 class VacuumWorldTest(unittest.TestCase):
@@ -122,6 +123,25 @@ class VacuumWorldTest(unittest.TestCase):
             s_p = vwmodel.VWState(s.robot, dust)
             dust_prob = ( q**(n_dust-2) )*( (1-q)**(5-n_dust) )
             self.assertTrue(np.abs( T[s_p] - dust_prob) < 1e-10)
+            
+        for s in self._model1.S():
+            for a in self._model1.A():
+                T = self._model1.T(s,a)
+                self.assertTrue( abs( sum(T.values())-1.0 ) < 10e-10 )
+            
+    def test_reward(self):
+        reward = vwreward.VWReward()
+        dust = np.array([[1, 0],
+                         [1, 1]])
+        s = vwmodel.VWState( np.array( [1,1] ), dust)
+        a = vwmodel.VWSuckAction()
+        
+        self.assertEqual(reward.reward(s, a), -3)
+        
+        a = vwmodel.VWMoveAction( np.array( [-1,0] ) )
+        
+        self.assertEqual(reward.reward(s,a), -4)
+        
     
 if __name__ == '__main__':
     unittest.main()

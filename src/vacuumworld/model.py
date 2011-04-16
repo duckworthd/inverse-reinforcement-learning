@@ -1,4 +1,5 @@
 import mdp.model
+import vacuumworld.reward
 import numpy as np
 import util.functions
 import util.classes
@@ -16,8 +17,8 @@ class VWState(mdp.model.State):
         self.robot = robot
         self.dust = dust
         
-    def __str__(self):
-        return 'VWState [robot={}, dust={}'.format(self.robot, self.dust)
+#    def __str__(self):
+#        return 'VWState [robot={}, dust={}'.format(self.robot, self.dust)
     
     def __eq__(self, other):
         try:
@@ -31,7 +32,20 @@ class VWState(mdp.model.State):
         for row in np.nonzero(self.dust):
             result += hash( tuple(row) )
         return result
-        
+    
+    def __str__(self):
+        result = ['VWState:\n']
+        (m,n) = self.dust.shape
+        for i in reversed(range(m)):
+            for j in range(n):
+                if self.dust[i,j] == 1:
+                    result.append( '[O]')
+                else:
+                    result.append( '[-]')
+                if np.all( self.robot == np.array( (i,j) ) ):
+                    result[-1] = '[X]'
+            result.append( '\n' )
+        return ''.join(result)
 
 class VWMoveAction(mdp.model.Action):
     '''
@@ -100,10 +114,13 @@ class VWModel(mdp.model.Model):
         
         self._move_actions = [VWMoveAction(up), VWMoveAction(left),
                          VWMoveAction(right), VWMoveAction(down)]
+        self.reward_function = vacuumworld.reward.VWReward()
     
     def T(self,state,action):
         """Returns a function state -> [0,1] for probability of next state
         given currently in state performing action"""
+        valid_locs = [ tuple(i) for i in np.transpose( np.nonzero(self._map)) ]
+        
         # Robot movement transitions
         robot_locs = util.classes.NumMap()  #Uses states, but only robot location relevant
         if action in self._move_actions:
@@ -126,8 +143,8 @@ class VWModel(mdp.model.Model):
         
         # all possible dust assignment transitions
         no_dust = []    # all positions that COULD become dust
-        for loc in np.transpose( np.nonzero(self._map)):
-            if state.dust[tuple(loc)] == 0:
+        for loc in valid_locs:
+            if state.dust[loc] == 0:
                 no_dust.append(loc)
         dust_locs = util.classes.NumMap()   #Uses states, but only dust locs relevant
         if len(no_dust) > 0:
@@ -149,7 +166,7 @@ class VWModel(mdp.model.Model):
                 if action == VWSuckAction():
                     # Remove dust under agent if action was Suck
                     dust_loc = VWSuckAction().apply(dust_loc)
-                result[VWState(robot_loc.robot, dust_loc.dust)] = r_p*d_p
+                result[VWState(robot_loc.robot, dust_loc.dust)] += r_p*d_p
         return result
         
     def S(self):
@@ -186,3 +203,15 @@ class VWModel(mdp.model.Model):
             if self._map[ tuple(pos) ] == 0:
                 return False
         return True
+    
+    def info(self):
+        result = ['VWModel:\n']
+        (m,n) = self._map.shape
+        for i in reversed(range(m)):
+            for j in range(n):
+                if self._map[i,j] == 1:
+                    result.append( '[O]')
+                else:
+                    result.append( '[1]')
+            result.append( '\n' )
+        return ''.join(result)
