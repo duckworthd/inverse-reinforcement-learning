@@ -36,7 +36,7 @@ if __name__ == '__main__':
 #    policy = mdp.agent.HumanAgent(model)
 #    policy = mdp.agent.RandomAgent(model.A())
 #    policy = mdp.solvers.ValueIterator(20).solve(model)
-    policy = mdp.solvers.PolicyIterator(20, mdp.solvers.ExactPolicyEvaluator(50)).solve(model)
+    policy = mdp.solvers.PolicyIterator(20, mdp.solvers.ExactPolicyEvaluator()).solve(model)
     
     ## Print
     print model.info()

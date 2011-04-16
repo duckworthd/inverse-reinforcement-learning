@@ -397,7 +397,7 @@ class PolicyIterator(MDPSolver):
             # Evaluate policy
             V_pi = self._eval.evaluate_policy(model, agent)
             
-            print V_pi
+            print 'Iteration #{}'.format(i)
             
             # Do a 1-step lookahead, choose best action
             policy = {}
