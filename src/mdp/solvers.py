@@ -5,12 +5,14 @@ Created on Apr 7, 2011
 '''
 import util.classes
 import mdp.agent
+import numpy as np
 import numpy.random
 import numpy.linalg
 import random
 import mdp.simulation
 import mdp.etc
 import math
+import itertools
 
 class MDPSolver(object):
     def solve(self, model):
@@ -254,7 +256,7 @@ class QValueIterator(MDPSolver):
                 QQ[ (s,a) ] = value
         return QQ
 
-class ExactPolicyEvaluator(PolicyEvaluator):
+class IteratingPolicyEvaluator(PolicyEvaluator):
     def __init__(self, max_iter):
         self._max_iter = max_iter
           
@@ -278,8 +280,83 @@ class ExactPolicyEvaluator(PolicyEvaluator):
                 vv += t_pi*v
             VV[s] = vv
         return VV
-    
-class ApproximatePolicyEvaluator(PolicyEvaluator):
+
+class ExactPolicyEvaluator(PolicyEvaluator):
+    def evaluate_policy(self, model, agent):
+        '''
+        Use linear algebra to solve
+            Q = R + gamma*P*P*Q
+        where R  is (m*n x 1)
+              P  is (m*n x n)
+              PI is (n x m*n) with n copies of P(a=i|s=j) along each row
+              Q  is (m*n x 1)
+        m = number of actions
+        n = number of states
+        '''
+        # State + Actions
+        S = list( model.S() )
+        A = list( model.A() )
+        SA = []
+        for s in S:
+            for a in A:
+                SA.append((s,a))
+        
+        S_dict = {}
+        for (i,s) in enumerate(S):
+            S_dict[s] = i
+        
+        A_dict = {} 
+        for (j,a) in enumerate(A):
+            A_dict[a] = j
+        
+        SA_dict = {}
+        for (i,s) in enumerate(S):
+            for (j,a) in enumerate(A):
+                SA_dict[(s,a)] = i*len(A)+j
+        
+        gamma = model.gamma
+        (n,m) = ( len(S), len(A) )
+        R = np.zeros( m*n )
+        P = np.zeros( [m*n,n])
+        PI= np.zeros( [n,m*n])        
+        
+        # Fill R
+        for ((s,a),i) in SA_dict.items():
+            R[i] = model.R(s,a)
+        
+        # Fill P
+        for ((s,a),i) in SA_dict.items():
+            T = model.T(s,a)
+            for (s2,p) in T.items():
+                j = S_dict[s2]
+                P[i,j] = p
+        
+        # Fill PI
+        pis = {}
+        for s in S:
+            pi = agent.actions(s)
+            for a in A:
+                pis[(s,a)] = pi[a]
+        for (i,s) in enumerate(S):
+            for (j,(s_p,a)) in enumerate(SA):
+                if s_p != s:
+                    continue
+                PI[i,j] = pis[(s,a)]
+        
+        # Solve
+        Q = numpy.linalg.solve(np.eye(n*m)-gamma*np.dot(P,PI), R) 
+        
+        # Build V = max_{A} Q(s,a)
+        V = util.classes.NumMap()
+        for (i,s) in enumerate(S):
+            acts = util.classes.NumMap()
+            for a in A:
+                acts[a] = Q[ SA_dict[(s,a)] ]
+            V[s] = acts.max()
+        return V
+                
+                
+class SamplingPolicyEvaluator(PolicyEvaluator):
     def __init__(self, n_samples, sample_len=-1):
         self._n_samples = n_samples
         self._sample_len = sample_len

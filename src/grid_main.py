@@ -53,8 +53,9 @@ if __name__ == '__main__':
     policy = mdp.solvers.ValueIterator(100).solve(model)
 #    policy = mdp.solvers.QValueIterator(100).solve(model)
 #    policy = mdp.solvers.LSPI(40,1000).solve(model)
-#    policy = mdp.solvers.PolicyIterator(20, mdp.solvers.ExactPolicyEvaluator(100)).solve(model)
-#    policy = mdp.solvers.PolicyIterator(20, mdp.solvers.ApproximatePolicyEvaluator(100,50)).solve(model)
+#    policy = mdp.solvers.PolicyIterator(20, mdp.solvers.IteratingPolicyEvaluator(100)).solve(model)
+#    policy = mdp.solvers.PolicyIterator(20, mdp.solvers.SamplingPolicyEvaluator(100,50)).solve(model)
+#    policy = mdp.solvers.PolicyIterator(20, mdp.solvers.ExactPolicyEvaluator()).solve(model)
     
     ## Print out world information
     print model.info()
@@ -71,19 +72,19 @@ if __name__ == '__main__':
         print '%s, %s, %f' % (s,a,r)
     print 'Average Score: %f' % (evaluate_policy(model, initial, policy, t_max),)
     
-    ## Do IRL
-    irl = mdp.solvers.IRLExactSolver(20, mdp.solvers.ValueIterator(100))
-    (estimated_policy, estimated_weights) = irl.solve(model, initial, policy) 
-#    irl = mdp.solvers.IRLApprximateSolver(20, mdp.solvers.ValueIterator(100), 100)
-#    samples = irl.generate_samples(model, policy, initial)
-#    (estimated_policy, estimated_weights) = irl.solve(model, initial, samples) 
-    
-    ## Estimate estimated policy quality
-    model.reward_function.params = reward_weights
-    print 'Average Score: %f' % (evaluate_policy(model, initial, estimated_policy, t_max),)
-    
-    for s in model.S():
-        print 's = %s, pi*(s) = %s, pi_E(s) = %s' % ( s, policy.actions(s), estimated_policy.actions(s) )
-    print 'pi* and pi_E disagree on {} of {} states'.format( len([ s for s in model.S() if 
-                                                            policy.actions(s) != estimated_policy.actions(s) ]),
-                                                            len(model.S()) )
+#    ## Do IRL
+#    irl = mdp.solvers.IRLExactSolver(20, mdp.solvers.ValueIterator(100))
+#    (estimated_policy, estimated_weights) = irl.solve(model, initial, policy) 
+##    irl = mdp.solvers.IRLApprximateSolver(20, mdp.solvers.ValueIterator(100), 100)
+##    samples = irl.generate_samples(model, policy, initial)
+##    (estimated_policy, estimated_weights) = irl.solve(model, initial, samples) 
+#    
+#    ## Estimate estimated policy quality
+#    model.reward_function.params = reward_weights
+#    print 'Average Score: %f' % (evaluate_policy(model, initial, estimated_policy, t_max),)
+#    
+#    for s in model.S():
+#        print 's = %s, pi*(s) = %s, pi_E(s) = %s' % ( s, policy.actions(s), estimated_policy.actions(s) )
+#    print 'pi* and pi_E disagree on {} of {} states'.format( len([ s for s in model.S() if 
+#                                                            policy.actions(s) != estimated_policy.actions(s) ]),
+#                                                            len(model.S()) )
