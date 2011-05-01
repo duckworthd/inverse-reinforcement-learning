@@ -4,9 +4,9 @@ Miscellaneous utility functions
 import random
 import numpy as np
 
-def sample(distr):
+def sample(distr, n_samples=1):
     '''
-    sample from a discrete probability distribution
+    generate n_samples from a discrete probability distribution
     '''
     if len(distr) == 0:
         raise Exception("Can't sample empty distribution")
@@ -18,6 +18,28 @@ def sample(distr):
             return choice
     raise Exception( "Sum of probability = {} < 1.  Did you normalize? {}".format(sum(distr.values()),
                                                                                   distr) )
+def samples(distr, n_samples):
+    '''
+    Generate n_sampels from distr were distr[event] = Pr(event)
+    '''
+    # Generate index
+    index = []
+    total = 0
+    for (key, prob) in distr.items():
+        total += prob
+        index.append( (total, key) )
+    if abs(1-index[-1][0]) > 1e-8:
+        raise Exception( "Sum of probability = {} < 1.  Did you normalize? {}".format(index[-1][0],
+                                                                                      distr) )
+    # sample from index using TODO binary search
+    result = []
+    for i in range(n_samples):
+        p = random.random()
+        for (p_total, key) in index:
+            if p_total >= p:
+                result.append(key)
+                break
+    return result
 
 def bitstrings(n):
     '''
@@ -50,4 +72,3 @@ def sparse_matrix(size, indices, values, M=None):
     for (i,ind) in enumerate(indices):
         M[ tuple(ind) ] = values[i]
     return M
-    

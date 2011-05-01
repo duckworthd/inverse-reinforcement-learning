@@ -42,6 +42,18 @@ class NumMap(dict):
         result_list.append('}')
         return ''.join(result_list)
     
+    def __eq__(self, other):
+        try:
+            for (key,val) in self.items():
+                if val != other[key]:
+                    return False
+            for (key, val) in other.items():
+                if val != self[key]:
+                    return False
+            return True
+        except Exception:
+            return False
+    
     def info(self):
         result = ['NumMap:\n']
         for (k,v) in self.items():

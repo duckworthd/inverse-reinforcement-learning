@@ -20,7 +20,7 @@ class GWState(State):
     def __str__(self):
         return 'GWState: [location={}]'.format(self.location)
     
-    def __repr(self):
+    def __repr__(self):
         return self.__str__()
     
     def __eq__(self, other):
@@ -53,7 +53,7 @@ class GWAction(Action):
     def __str__(self):
         return "GWAction: [direction={}]".format(self.direction)
     
-    def __repr(self):
+    def __repr__(self):
         return self.__str__()
     
     def __eq__(self,other):

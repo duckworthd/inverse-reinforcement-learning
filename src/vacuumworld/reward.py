@@ -20,3 +20,28 @@ class VWReward(mdp.reward.Reward):
         elif isinstance(action, vacuumworld.model.VWSuckAction):
             result -= 0
         return result
+    
+class VWLinearReward(mdp.reward.LinearReward):
+    '''
+    Equivalent to VWReward, but specified in a linear fashion
+    '''
+    def __init__(self, map):
+        self._map = map
+        weights = -1*np.ones( self.dim )
+        weights[-1] = 0
+        self.params = weights
+        
+    def features(self, state, action):
+        result = np.zeros( self.dim )
+        dust = state.dust
+        for (i,idx) in enumerate( np.transpose( np.nonzero(np.ones( self._map.shape )) ) ):
+            result[i] = dust[tuple(idx)]
+        if isinstance(action, vacuumworld.model.VWMoveAction):
+            result[-2] = 1
+        elif isinstance(action, vacuumworld.model.VWSuckAction):
+            result[-1] = 1 
+        return result
+    
+    @property
+    def dim(self):
+        return np.prod(self._map.shape) + 2
